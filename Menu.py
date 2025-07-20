@@ -10,11 +10,10 @@ class Menu:
 
         self.mf = MenuItemFactory()
         self.items: Dict[str, MenuItem] = {}
-        self._initialize_sample_menu()
+        self.menu()
     
-    def _initialize_sample_menu(self):
-        """Initialize with some sample menu items"""
-        sample_items = [
+    def menu(self):
+        items = [
     (FoodCategory.APPETIZER, "Chicken Wings", 11.99, "6 Spicy buffalo wings with blue cheese dressing, and celery sticks"),
     (FoodCategory.APPETIZER, "Bruschetta", 7.99, "Toasted bread with tomatoes, basil, and balsamic glaze"),
     (FoodCategory.APPETIZER, "Mozzarella Sticks", 6.49, "Breaded and fried mozzarella sticks with marinara sauce"),
@@ -42,7 +41,7 @@ class Menu:
     (FoodCategory.SIDE, "Caesar Salad", 5.99, "Romaine lettuce with Caesar dressing, croutons, and parmesan cheese")
         ]
         
-        for category, name, price, description in sample_items:
+        for category, name, price, description in items:
             self.add_item(category, name, price, description)
     
     def add_item(self, category: FoodCategory, name: str, price: float, description: str = ""):
@@ -54,3 +53,18 @@ class Menu:
     
     def get_item(self, name: str) -> MenuItem:
         return self.items.get(name)
+    
+    def add_item_from_user_input(self, category_input: str, name: str, price: float, description: str = ""):
+        """Allow the user to add a new item to the menu via input."""
+        try:
+            
+            category = FoodCategory[category_input] 
+            name = name.strip()
+            price = price.strip()
+            description = description.strip()
+
+            self.add_item(category, name, price, description)
+        except KeyError:
+            print("Invalid category. Please try again.")
+        except ValueError:
+            print("Invalid input. Please ensure price is a number.")

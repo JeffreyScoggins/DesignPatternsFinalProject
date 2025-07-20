@@ -303,7 +303,7 @@ class FoodOrderingGUI:
                     break
             
             price = float(price_str)
-            self.menu.add_item(category, name, price, description)
+            self.menu.add_item_from_user_input(category, name, price_str, description)
             
             self.status_label.config(text=f"Successfully added {name} to menu!", fg='green')
             
