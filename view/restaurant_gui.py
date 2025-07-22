@@ -3,11 +3,22 @@ from tkinter import ttk, messagebox
 import json
 from datetime import datetime
 from pathlib import Path
+import sys
+import os
+
+# Add the domains path to Python path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from domains.menu import (
+    MenuManager, MenuItemFactory, MenuCategory, 
+    DietaryRestriction, NutritionalInfo, MenuItemMetadata, 
+    PreparationStyle
+)
 
 class RestaurantApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Delicious Bites - Restaurant Ordering System")
+        self.root.title("Restaurant Ordering System")
         self.root.geometry("1200x800")
         self.root.minsize(1000, 700)
         
@@ -27,48 +38,296 @@ class RestaurantApp:
         # Configure root
         self.root.configure(bg=self.colors['bg'])
         
+        # Initialize menu system
+        self.menu_manager = MenuManager()
+        self.menu_factory = MenuItemFactory()
+        
         # Data storage
-        self.menu_items = self.load_menu()
         self.cart = []
         self.current_category = "All"
         self.total_amount = 0.0
+        
+        # Initialize menu data
+        self.initialize_menu()
         
         # Setup UI
         self.setup_styles()
         self.create_widgets()
 
-    # ===== INITIALIZATION & SETUP =====
+    # ===== MENU INITIALIZATION =====
     
-    def load_menu(self):
-        """Load menu items"""
-        return {
-            "Appetizers": [
-                {"name": "Buffalo Wings", "price": 12.99, "description": "Spicy chicken wings with blue cheese dip", "image": "🍗"},
-                {"name": "Mozzarella Sticks", "price": 8.99, "description": "Crispy fried mozzarella with marinara sauce", "image": "🧀"},
-                {"name": "Loaded Nachos", "price": 10.99, "description": "Tortilla chips with cheese, jalapeños, and sour cream", "image": "🌮"},
-                {"name": "Calamari Rings", "price": 11.99, "description": "Golden fried squid rings with spicy mayo", "image": "🦑"}
-            ],
-            "Main Courses": [
-                {"name": "Grilled Salmon", "price": 24.99, "description": "Atlantic salmon with lemon butter and vegetables", "image": "🐟"},
-                {"name": "Ribeye Steak", "price": 32.99, "description": "12oz ribeye with garlic mashed potatoes", "image": "🥩"},
-                {"name": "Chicken Parmesan", "price": 18.99, "description": "Breaded chicken with marinara and mozzarella", "image": "🍗"},
-                {"name": "Vegetarian Pasta", "price": 16.99, "description": "Penne pasta with seasonal vegetables and pesto", "image": "🍝"},
-                {"name": "BBQ Ribs", "price": 26.99, "description": "Full rack of ribs with coleslaw and fries", "image": "🍖"}
-            ],
-            "Desserts": [
-                {"name": "Chocolate Cake", "price": 7.99, "description": "Rich chocolate cake with vanilla ice cream", "image": "🍰"},
-                {"name": "Cheesecake", "price": 6.99, "description": "New York style cheesecake with berry sauce", "image": "🍰"},
-                {"name": "Ice Cream Sundae", "price": 5.99, "description": "Three scoops with hot fudge and whipped cream", "image": "🍨"},
-                {"name": "Tiramisu", "price": 8.99, "description": "Classic Italian dessert with coffee and mascarpone", "image": "🍮"}
-            ],
-            "Beverages": [
-                {"name": "Craft Beer", "price": 4.99, "description": "Local IPA on tap", "image": "🍺"},
-                {"name": "House Wine", "price": 6.99, "description": "Red or white wine by the glass", "image": "🍷"},
-                {"name": "Fresh Lemonade", "price": 3.99, "description": "Freshly squeezed lemonade", "image": "🍋"},
-                {"name": "Coffee", "price": 2.99, "description": "Premium roasted coffee", "image": "☕"},
-                {"name": "Soft Drinks", "price": 2.49, "description": "Coke, Pepsi, Sprite, Orange", "image": "🥤"}
-            ]
-        }
+    def initialize_menu(self):
+        """Initialize menu with sample data using the menu domain"""
+        
+        # Appetizers
+        appetizers = [
+            {
+                'name': 'Buffalo Wings',
+                'description': 'Spicy chicken wings with blue cheese dip',
+                'price': 12.99,
+                'serving_size': '8 pieces',
+                'shareable': True,
+                'nutritional_info': NutritionalInfo(calories=420, protein_grams=28, fat_grams=32),
+                'metadata': MenuItemMetadata(
+                    spice_level=3,
+                    preparation_style=PreparationStyle.FRIED,
+                    ingredients=['chicken wings', 'buffalo sauce', 'blue cheese', 'celery'],
+                    allergens=['dairy']
+                )
+            },
+            {
+                'name': 'Mozzarella Sticks',
+                'description': 'Crispy fried mozzarella with marinara sauce',
+                'price': 8.99,
+                'serving_size': '6 pieces',
+                'shareable': True,
+                'nutritional_info': NutritionalInfo(calories=340, protein_grams=18, fat_grams=24),
+                'metadata': MenuItemMetadata(
+                    preparation_style=PreparationStyle.FRIED,
+                    dietary_restrictions=[DietaryRestriction.VEGETARIAN],
+                    ingredients=['mozzarella cheese', 'breadcrumbs', 'marinara sauce'],
+                    allergens=['dairy', 'gluten']
+                )
+            },
+            {
+                'name': 'Loaded Nachos',
+                'description': 'Tortilla chips with cheese, jalapeños, and sour cream',
+                'price': 10.99,
+                'serving_size': 'Large plate',
+                'shareable': True,
+                'nutritional_info': NutritionalInfo(calories=580, protein_grams=22, fat_grams=38),
+                'metadata': MenuItemMetadata(
+                    spice_level=2,
+                    dietary_restrictions=[DietaryRestriction.VEGETARIAN],
+                    ingredients=['tortilla chips', 'cheese', 'jalapeños', 'sour cream', 'salsa'],
+                    allergens=['dairy', 'gluten']
+                )
+            },
+            {
+                'name': 'Calamari Rings',
+                'description': 'Golden fried squid rings with spicy mayo',
+                'price': 11.99,
+                'serving_size': '10 rings',
+                'nutritional_info': NutritionalInfo(calories=310, protein_grams=20, fat_grams=18),
+                'metadata': MenuItemMetadata(
+                    spice_level=1,
+                    preparation_style=PreparationStyle.FRIED,
+                    ingredients=['squid', 'flour', 'spicy mayo'],
+                    allergens=['seafood', 'gluten', 'eggs']
+                )
+            }
+        ]
+        
+        # Main Courses
+        main_courses = [
+            {
+                'name': 'Grilled Salmon',
+                'description': 'Atlantic salmon with lemon butter and vegetables',
+                'price': 24.99,
+                'protein_source': 'salmon',
+                'cooking_method': 'grilled',
+                'nutritional_info': NutritionalInfo(calories=520, protein_grams=45, fat_grams=28),
+                'metadata': MenuItemMetadata(
+                    preparation_style=PreparationStyle.GRILLED,
+                    chef_special=True,
+                    ingredients=['salmon', 'lemon', 'butter', 'asparagus', 'carrots'],
+                    allergens=['fish', 'dairy']
+                )
+            },
+            {
+                'name': 'Ribeye Steak',
+                'description': '12oz ribeye with garlic mashed potatoes',
+                'price': 32.99,
+                'protein_source': 'beef',
+                'cooking_method': 'grilled',
+                'nutritional_info': NutritionalInfo(calories=780, protein_grams=65, fat_grams=52),
+                'metadata': MenuItemMetadata(
+                    preparation_style=PreparationStyle.GRILLED,
+                    chef_special=True,
+                    ingredients=['ribeye steak', 'potatoes', 'garlic', 'butter', 'herbs'],
+                    allergens=['dairy']
+                )
+            },
+            {
+                'name': 'Chicken Parmesan',
+                'description': 'Breaded chicken with marinara and mozzarella',
+                'price': 18.99,
+                'protein_source': 'chicken',
+                'cooking_method': 'fried',
+                'nutritional_info': NutritionalInfo(calories=640, protein_grams=48, fat_grams=32),
+                'metadata': MenuItemMetadata(
+                    preparation_style=PreparationStyle.FRIED,
+                    ingredients=['chicken breast', 'breadcrumbs', 'marinara', 'mozzarella', 'pasta'],
+                    allergens=['gluten', 'dairy', 'eggs']
+                )
+            },
+            {
+                'name': 'Vegetarian Pasta',
+                'description': 'Penne pasta with seasonal vegetables and pesto',
+                'price': 16.99,
+                'cooking_method': 'mixed',
+                'nutritional_info': NutritionalInfo(calories=450, protein_grams=16, fat_grams=18),
+                'metadata': MenuItemMetadata(
+                    preparation_style=PreparationStyle.MIXED,
+                    dietary_restrictions=[DietaryRestriction.VEGETARIAN],
+                    seasonal=True,
+                    ingredients=['penne pasta', 'bell peppers', 'zucchini', 'pesto', 'parmesan'],
+                    allergens=['gluten', 'dairy', 'nuts']
+                )
+            },
+            {
+                'name': 'BBQ Ribs',
+                'description': 'Full rack of ribs with coleslaw and fries',
+                'price': 26.99,
+                'protein_source': 'pork',
+                'cooking_method': 'grilled',
+                'nutritional_info': NutritionalInfo(calories=890, protein_grams=58, fat_grams=62),
+                'metadata': MenuItemMetadata(
+                    spice_level=2,
+                    preparation_style=PreparationStyle.GRILLED,
+                    ingredients=['pork ribs', 'bbq sauce', 'cabbage', 'potatoes'],
+                    allergens=['gluten']
+                )
+            }
+        ]
+        
+        # Desserts
+        desserts = [
+            {
+                'name': 'Chocolate Cake',
+                'description': 'Rich chocolate cake with vanilla ice cream',
+                'price': 7.99,
+                'sweetness_level': 'high',
+                'temperature': 'room',
+                'nutritional_info': NutritionalInfo(calories=520, protein_grams=8, fat_grams=24),
+                'metadata': MenuItemMetadata(
+                    chef_special=True,
+                    ingredients=['chocolate', 'flour', 'eggs', 'vanilla ice cream'],
+                    allergens=['gluten', 'dairy', 'eggs']
+                )
+            },
+            {
+                'name': 'Cheesecake',
+                'description': 'New York style cheesecake with berry sauce',
+                'price': 6.99,
+                'sweetness_level': 'medium',
+                'temperature': 'chilled',
+                'nutritional_info': NutritionalInfo(calories=450, protein_grams=10, fat_grams=32),
+                'metadata': MenuItemMetadata(
+                    ingredients=['cream cheese', 'graham crackers', 'berries', 'sugar'],
+                    allergens=['dairy', 'gluten', 'eggs']
+                )
+            },
+            {
+                'name': 'Ice Cream Sundae',
+                'description': 'Three scoops with hot fudge and whipped cream',
+                'price': 5.99,
+                'sweetness_level': 'high',
+                'temperature': 'frozen',
+                'nutritional_info': NutritionalInfo(calories=380, protein_grams=6, fat_grams=18),
+                'metadata': MenuItemMetadata(
+                    ingredients=['ice cream', 'hot fudge', 'whipped cream', 'cherry'],
+                    allergens=['dairy']
+                )
+            },
+            {
+                'name': 'Tiramisu',
+                'description': 'Classic Italian dessert with coffee and mascarpone',
+                'price': 8.99,
+                'sweetness_level': 'medium',
+                'temperature': 'chilled',
+                'nutritional_info': NutritionalInfo(calories=420, protein_grams=8, fat_grams=28),
+                'metadata': MenuItemMetadata(
+                    origin='Italian',
+                    ingredients=['mascarpone', 'coffee', 'ladyfingers', 'cocoa'],
+                    allergens=['dairy', 'eggs', 'gluten']
+                )
+            }
+        ]
+        
+        # Beverages
+        beverages = [
+            {
+                'name': 'Craft Beer',
+                'description': 'Local IPA on tap',
+                'price': 4.99,
+                'beverage_type': 'alcoholic',
+                'temperature': 'cold',
+                'nutritional_info': NutritionalInfo(calories=180, protein_grams=2, carbs_grams=14),
+                'metadata': MenuItemMetadata(
+                    ingredients=['hops', 'barley', 'yeast'],
+                    allergens=['gluten']
+                )
+            },
+            {
+                'name': 'House Wine',
+                'description': 'Red or white wine by the glass',
+                'price': 6.99,
+                'beverage_type': 'alcoholic',
+                'temperature': 'room',
+                'nutritional_info': NutritionalInfo(calories=125, protein_grams=0, carbs_grams=4),
+                'metadata': MenuItemMetadata(
+                    ingredients=['grapes', 'sulfites'],
+                    allergens=['sulfites']
+                )
+            },
+            {
+                'name': 'Fresh Lemonade',
+                'description': 'Freshly squeezed lemonade',
+                'price': 3.99,
+                'beverage_type': 'soft',
+                'temperature': 'cold',
+                'nutritional_info': NutritionalInfo(calories=120, protein_grams=0, carbs_grams=32),
+                'metadata': MenuItemMetadata(
+                    dietary_restrictions=[DietaryRestriction.VEGAN, DietaryRestriction.VEGETARIAN],
+                    ingredients=['lemons', 'sugar', 'water']
+                )
+            },
+            {
+                'name': 'Coffee',
+                'description': 'Premium roasted coffee',
+                'price': 2.99,
+                'beverage_type': 'hot',
+                'temperature': 'hot',
+                'caffeine_content': 95,
+                'nutritional_info': NutritionalInfo(calories=5, protein_grams=0, carbs_grams=1),
+                'metadata': MenuItemMetadata(
+                    dietary_restrictions=[DietaryRestriction.VEGAN, DietaryRestriction.VEGETARIAN],
+                    ingredients=['coffee beans', 'water']
+                )
+            },
+            {
+                'name': 'Soft Drinks',
+                'description': 'Coke, Pepsi, Sprite, Orange',
+                'price': 2.49,
+                'beverage_type': 'soft',
+                'temperature': 'cold',
+                'caffeine_content': 34,
+                'nutritional_info': NutritionalInfo(calories=140, protein_grams=0, carbs_grams=39),
+                'metadata': MenuItemMetadata(
+                    ingredients=['carbonated water', 'high fructose corn syrup', 'caramel color']
+                )
+            }
+        ]
+        
+        # Create menu items using factory
+        for appetizer_data in appetizers:
+            item = self.menu_factory.create_appetizer(**appetizer_data)
+            self.menu_manager.add_item(item)
+            
+        for main_data in main_courses:
+            item = self.menu_factory.create_main_course(**main_data)
+            self.menu_manager.add_item(item)
+            
+        for dessert_data in desserts:
+            item = self.menu_factory.create_dessert(**dessert_data)
+            self.menu_manager.add_item(item)
+            
+        for beverage_data in beverages:
+            item = self.menu_factory.create_beverage(**beverage_data)
+            self.menu_manager.add_item(item)
+
+    # ===== INITIALIZATION & SETUP =====
         
     def setup_styles(self):
         """Configure modern ttk styles"""
@@ -116,6 +375,12 @@ class RestaurantApp:
                                style='Title.TLabel')
         title_label.pack(side='left')
         
+        # Menu statistics
+        stats = self.menu_manager.get_menu_statistics()
+        stats_text = f"Menu Items: {stats['available_items']} | Chef Specials: {stats['chef_specials']}"
+        stats_label = ttk.Label(header_frame, text=stats_text, style='Modern.TLabel')
+        stats_label.pack(side='left', padx=(20, 0))
+        
         # Order info
         order_info = ttk.Frame(header_frame, style='Modern.TFrame')
         order_info.pack(side='right')
@@ -143,17 +408,18 @@ class RestaurantApp:
         menu_frame = ttk.Frame(parent, style='Modern.TFrame')
         menu_frame.pack(side='left', fill='both', expand=True, padx=(0, 15))
         
-        # Category navigation
+        # Category navigation and filters
         self.create_category_nav(menu_frame)
         
         # Menu items display
         self.create_menu_display(menu_frame)
         
     def create_category_nav(self, parent):
-        """Create category navigation buttons"""
+        """Create category navigation buttons and filters"""
         nav_frame = ttk.Frame(parent, style='Modern.TFrame')
         nav_frame.pack(fill='x', pady=(0, 20))
         
+        # Category section
         ttk.Label(nav_frame, text="Menu Categories", 
                  style='Modern.TLabel', font=('Segoe UI', 14, 'bold')).pack(anchor='w', pady=(0, 10))
         
@@ -163,9 +429,48 @@ class RestaurantApp:
         
         self.create_category_buttons()
         
+        # Filter section
+        filter_frame = ttk.Frame(nav_frame, style='Modern.TFrame')
+        filter_frame.pack(fill='x', pady=(15, 0))
+        
+        ttk.Label(filter_frame, text="Filters", 
+                 style='Modern.TLabel', font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
+        
+        # Filter buttons row
+        filter_buttons_frame = ttk.Frame(filter_frame, style='Modern.TFrame')
+        filter_buttons_frame.pack(fill='x')
+        
+        # Dietary restriction filters
+        self.filter_buttons = {}
+        filters = [
+            ('🌱 Vegan', DietaryRestriction.VEGAN),
+            ('🥬 Vegetarian', DietaryRestriction.VEGETARIAN),
+            ('⭐ Chef Special', 'chef_special'),
+            ('🍂 Seasonal', 'seasonal'),
+            ('🌶️ Spicy', 'spicy')
+        ]
+        
+        for label, filter_type in filters:
+            btn = tk.Button(filter_buttons_frame, text=label,
+                          command=lambda f=filter_type: self.toggle_filter(f),
+                          bg=self.colors['secondary'], fg=self.colors['fg'],
+                          font=('Segoe UI', 9), bd=0, pady=6, padx=12,
+                          activebackground=self.colors['hover'],
+                          activeforeground=self.colors['fg'],
+                          cursor='hand2')
+            btn.pack(side='left', padx=(0, 8))
+            self.filter_buttons[filter_type] = btn
+        
+        self.active_filters = set()
+        
     def create_category_buttons(self):
         """Create the actual category buttons"""
-        categories = ["All"] + list(self.menu_items.keys())
+        # Get unique categories from menu manager
+        categories = ["All"]
+        for category in MenuCategory:
+            items = self.menu_manager.get_items_by_category(category)
+            if items:  # Only add categories that have items
+                categories.append(category.value.title())
         
         # Clear existing buttons
         for widget in self.button_frame.winfo_children():
@@ -210,17 +515,26 @@ class RestaurantApp:
         self.display_menu_items()
         
     def display_menu_items(self):
-        """Display menu items based on current category"""
+        """Display menu items based on current category and filters"""
         # Clear existing items
         for widget in self.menu_content_frame.winfo_children():
             widget.destroy()
             
-        items_to_show = []
+        # Get items based on category
         if self.current_category == "All":
-            for category_items in self.menu_items.values():
-                items_to_show.extend(category_items)
+            items_to_show = self.menu_manager.get_available_items()
         else:
-            items_to_show = self.menu_items.get(self.current_category, [])
+            # Convert category name back to MenuCategory enum
+            try:
+                menu_category = MenuCategory(self.current_category.lower())
+                items_to_show = self.menu_manager.get_items_by_category(menu_category)
+                # Filter available items
+                items_to_show = [item for item in items_to_show if item.available]
+            except ValueError:
+                items_to_show = []
+        
+        # Apply filters
+        items_to_show = self.apply_filters(items_to_show)
             
         # Create grid of menu items
         columns = 2
@@ -229,8 +543,40 @@ class RestaurantApp:
             col = i % columns
             self.create_menu_item_card(self.menu_content_frame, item, row, col)
             
+    def apply_filters(self, items):
+        """Apply active filters to items list"""
+        if not self.active_filters:
+            return items
+        
+        filtered_items = []
+        for item in items:
+            show_item = True
+            
+            for filter_type in self.active_filters:
+                if isinstance(filter_type, DietaryRestriction):
+                    if not item.matches_dietary_restriction(filter_type):
+                        show_item = False
+                        break
+                elif filter_type == 'chef_special':
+                    if not item.metadata.chef_special:
+                        show_item = False
+                        break
+                elif filter_type == 'seasonal':
+                    if not item.metadata.seasonal:
+                        show_item = False
+                        break
+                elif filter_type == 'spicy':
+                    if item.metadata.spice_level == 0:
+                        show_item = False
+                        break
+            
+            if show_item:
+                filtered_items.append(item)
+        
+        return filtered_items
+        
     def create_menu_item_card(self, parent, item, row, col):
-        """Create a menu item card WITHOUT hover effects"""
+        """Create a menu item card using the MenuItemBase object"""
         card_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=1)
         card_frame.grid(row=row, column=col, padx=10, pady=10, sticky='ew', ipadx=15, ipady=15)
         
@@ -239,27 +585,43 @@ class RestaurantApp:
         
         # Bind mousewheel to the card frame
         self.bind_menu_item_mousewheel(card_frame)
-        
-        # Item image/emoji
-        image_label = tk.Label(card_frame, text=item['image'], 
-                              bg=self.colors['card'], fg=self.colors['fg'],
+                
+        image_label = tk.Label(card_frame, bg=self.colors['card'], fg=self.colors['fg'],
                               font=('Segoe UI', 24))
         image_label.pack()
         self.bind_menu_item_mousewheel(image_label)
         
-        # Item name
-        name_label = tk.Label(card_frame, text=item['name'],
+        # Item name with special indicators
+        name_label = tk.Label(card_frame, text=item.get_display_name(),
                              bg=self.colors['card'], fg=self.colors['fg'],
                              font=('Segoe UI', 12, 'bold'))
         name_label.pack(pady=(10, 5))
         self.bind_menu_item_mousewheel(name_label)
         
+        # Spice level indicator
+        spice_indicator = item.get_spice_indicator()
+        if spice_indicator:
+            spice_label = tk.Label(card_frame, text=spice_indicator,
+                                 bg=self.colors['card'], fg=self.colors['accent'],
+                                 font=('Segoe UI', 10))
+            spice_label.pack()
+            self.bind_menu_item_mousewheel(spice_label)
+        
         # Item description
-        desc_label = tk.Label(card_frame, text=item['description'],
+        desc_label = tk.Label(card_frame, text=item.description,
                              bg=self.colors['card'], fg='#cccccc',
                              font=('Segoe UI', 9), wraplength=200)
-        desc_label.pack(pady=(0, 10))
+        desc_label.pack(pady=(0, 5))
         self.bind_menu_item_mousewheel(desc_label)
+        
+        # Nutritional info
+        nutrition_text = item.get_nutritional_summary()
+        if nutrition_text != "Nutritional info not available":
+            nutrition_label = tk.Label(card_frame, text=nutrition_text,
+                                     bg=self.colors['card'], fg='#888888',
+                                     font=('Segoe UI', 8))
+            nutrition_label.pack(pady=(0, 10))
+            self.bind_menu_item_mousewheel(nutrition_label)
         
         # Price and add button frame
         bottom_frame = tk.Frame(card_frame, bg=self.colors['card'])
@@ -267,7 +629,7 @@ class RestaurantApp:
         self.bind_menu_item_mousewheel(bottom_frame)
         
         # Price
-        price_label = tk.Label(bottom_frame, text=f"${item['price']:.2f}",
+        price_label = tk.Label(bottom_frame, text=f"${item.price:.2f}",
                               bg=self.colors['card'], fg=self.colors['accent'],
                               font=('Segoe UI', 14, 'bold'))
         price_label.pack(side='left')
@@ -283,15 +645,25 @@ class RestaurantApp:
                            cursor='hand2')
         add_btn.pack(side='right')
         self.bind_menu_item_mousewheel(add_btn)
-        
-        # NO HOVER EFFECTS FOR MENU ITEM CARDS - REMOVED COMPLETELY
 
-    # ===== MENU NAVIGATION =====
+    # ===== MENU NAVIGATION & FILTERING =====
     
     def show_category(self, category):
         """Show items from selected category"""
         self.current_category = category
         self.update_category_buttons()
+        self.display_menu_items()
+        self.reset_menu_scroll()
+        
+    def toggle_filter(self, filter_type):
+        """Toggle a filter on/off"""
+        if filter_type in self.active_filters:
+            self.active_filters.remove(filter_type)
+            self.filter_buttons[filter_type].config(bg=self.colors['secondary'])
+        else:
+            self.active_filters.add(filter_type)
+            self.filter_buttons[filter_type].config(bg=self.colors['accent'])
+        
         self.display_menu_items()
         self.reset_menu_scroll()
         
@@ -397,31 +769,32 @@ class RestaurantApp:
                                         bg=self.colors['secondary'], fg='#888888',
                                         font=('Segoe UI', 10))
         self.empty_cart_label.pack(pady=(10, 0))
-        
-        print("Cart summary section created with checkout button")  # Debug
 
     # ===== CART OPERATIONS =====
         
-    def add_to_cart(self, item):
-        """Add item to cart"""
-        print(f"Adding {item['name']} to cart")  # Debug
+    def add_to_cart(self, menu_item):
+        """Add menu item to cart"""
+        # Convert MenuItemBase to cart item dict for UI compatibility
+        cart_item_dict = {
+            'name': menu_item.name,
+            'price': menu_item.price,
+            'description': menu_item.description,
+            'category': menu_item.get_category().value,
+            'menu_item': menu_item  # Keep reference to original menu item
+        }
         
         # Check if item already exists in cart
         existing_item = next((cart_item for cart_item in self.cart 
-                             if cart_item['name'] == item['name']), None)
+                             if cart_item['name'] == menu_item.name), None)
         
         if existing_item:
             existing_item['quantity'] += 1
-            print(f"Updated quantity for {item['name']} to {existing_item['quantity']}")  # Debug
         else:
-            cart_item = item.copy()
-            cart_item['quantity'] = 1
-            self.cart.append(cart_item)
-            print(f"Added new item {item['name']} to cart")  # Debug
+            cart_item_dict['quantity'] = 1
+            self.cart.append(cart_item_dict)
             
         self.update_cart_display()
         self.update_total()
-        print(f"Cart now has {len(self.cart)} unique items")  # Debug
         
     def increase_quantity(self, item):
         """Increase item quantity"""
@@ -472,8 +845,19 @@ class RestaurantApp:
         info_frame = tk.Frame(item_frame, bg=self.colors['card'])
         info_frame.pack(fill='x')
         
-        # Name and price
-        tk.Label(info_frame, text=item['name'],
+        # Name and special indicators
+        name_text = item['name']
+        if 'menu_item' in item:
+            menu_item = item['menu_item']
+            if menu_item.metadata.chef_special:
+                name_text += " ⭐"
+            if menu_item.metadata.seasonal:
+                name_text += " 🍂"
+            spice_indicator = menu_item.get_spice_indicator()
+            if spice_indicator:
+                name_text += f" {spice_indicator}"
+        
+        tk.Label(info_frame, text=name_text,
                 bg=self.colors['card'], fg=self.colors['fg'],
                 font=('Segoe UI', 10, 'bold')).pack(anchor='w')
         
@@ -518,7 +902,7 @@ class RestaurantApp:
         
     def update_button_states(self):
         """Update button states based on cart contents"""
-        if hasattr(self, 'checkout_btn'):  # Make sure button exists
+        if hasattr(self, 'checkout_btn'):
             if self.cart:
                 self.checkout_btn.config(state='normal', 
                                        bg=self.colors['success'],
@@ -533,8 +917,6 @@ class RestaurantApp:
                 self.clear_btn.config(state='disabled', bg='#444444')
                 if hasattr(self, 'empty_cart_label'):
                     self.empty_cart_label.pack(pady=(10, 0))
-            
-            print(f"Button states updated. Cart has {len(self.cart)} items")  # Debug
 
     # ===== CHECKOUT FLOW =====
             
@@ -544,7 +926,6 @@ class RestaurantApp:
             messagebox.showwarning("Empty Cart", "Please add items to your cart first!")
             return
         
-        print(f"Opening checkout with {len(self.cart)} items, total: ${self.total_amount:.2f}")  # Debug
         CheckoutDialog(self.root, self.cart, self.total_amount, self.colors, self.order_complete)
         
     def order_complete(self):
@@ -559,116 +940,92 @@ class RestaurantApp:
     def setup_menu_mousewheel(self, menu_frame):
         """Setup comprehensive mousewheel binding for the menu area"""
         def scroll_menu(event):
-            # Only scroll if the canvas exists and has content
             if hasattr(self, 'menu_canvas'):
-                # Linux uses Button-4 and Button-5 for scroll wheel
                 if event.num == 4:
                     self.menu_canvas.yview_scroll(-1, "units")
                 elif event.num == 5:
                     self.menu_canvas.yview_scroll(1, "units")
                 else:
-                    # Windows/Mac mousewheel
                     self.menu_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         
-        # Store scroll function for global access
         self.menu_scroll_function = scroll_menu
         
-        # Bind mousewheel events globally when in menu area
         def bind_menu_scroll(event=None):
-            # Bind for all platforms
-            self.root.bind_all("<MouseWheel>", scroll_menu)  # Windows/Mac
-            self.root.bind_all("<Button-4>", scroll_menu)    # Linux scroll up
-            self.root.bind_all("<Button-5>", scroll_menu)    # Linux scroll down
+            self.root.bind_all("<MouseWheel>", scroll_menu)
+            self.root.bind_all("<Button-4>", scroll_menu)
+            self.root.bind_all("<Button-5>", scroll_menu)
             self.menu_scroll_active = True
         
         def unbind_menu_scroll(event=None):
-            # Only unbind if we're not in a child widget
             if hasattr(self, 'menu_scroll_active') and self.menu_scroll_active:
                 self.root.after_idle(self._check_mouse_position)
         
-        # Bind to the main menu frame
         menu_frame.bind('<Enter>', bind_menu_scroll)
         menu_frame.bind('<Leave>', unbind_menu_scroll)
-        
-        # Also bind to canvas
         self.menu_canvas.bind('<Enter>', bind_menu_scroll)
         self.menu_canvas.bind('<Leave>', unbind_menu_scroll)
         
     def _check_mouse_position(self):
         """Check if mouse is still in menu area before unbinding"""
         try:
-            # Get mouse position relative to menu canvas
             x = self.menu_canvas.winfo_pointerx() - self.menu_canvas.winfo_rootx()
             y = self.menu_canvas.winfo_pointery() - self.menu_canvas.winfo_rooty()
             
-            # Check if mouse is still within canvas bounds
             if (0 <= x <= self.menu_canvas.winfo_width() and 
                 0 <= y <= self.menu_canvas.winfo_height()):
-                # Mouse still in menu area, keep scrolling active
                 return
             
-            # Mouse has left menu area, unbind scrolling
             self.root.unbind_all("<MouseWheel>")
             self.root.unbind_all("<Button-4>")
             self.root.unbind_all("<Button-5>")
             self.menu_scroll_active = False
         except tk.TclError:
-            # Widget might be destroyed, ignore
             pass
         
     def bind_menu_item_mousewheel(self, widget):
         """Simplified menu item mousewheel binding"""
-        
+        pass
+    
     def setup_cart_mousewheel(self, cart_container):
         """Setup mousewheel binding for cart area"""
         def scroll_cart(event):
             if hasattr(self, 'cart_canvas'):
-                # Linux uses Button-4 and Button-5 for scroll wheel
                 if event.num == 4:
                     self.cart_canvas.yview_scroll(-1, "units")
                 elif event.num == 5:
                     self.cart_canvas.yview_scroll(1, "units")
                 else:
-                    # Windows/Mac mousewheel
                     self.cart_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         
         def bind_cart_scroll(event=None):
-            # Bind for all platforms
-            self.root.bind_all("<MouseWheel>", scroll_cart)  # Windows/Mac
-            self.root.bind_all("<Button-4>", scroll_cart)    # Linux scroll up
-            self.root.bind_all("<Button-5>", scroll_cart)    # Linux scroll down
+            self.root.bind_all("<MouseWheel>", scroll_cart)
+            self.root.bind_all("<Button-4>", scroll_cart)
+            self.root.bind_all("<Button-5>", scroll_cart)
             self.cart_scroll_active = True
         
         def unbind_cart_scroll(event=None):
-            # Delayed unbinding to prevent conflicts
             self.root.after_idle(self._check_cart_mouse_position)
         
         cart_container.bind('<Enter>', bind_cart_scroll)
         cart_container.bind('<Leave>', unbind_cart_scroll)
-        
         self.cart_canvas.bind('<Enter>', bind_cart_scroll)
         self.cart_canvas.bind('<Leave>', unbind_cart_scroll)
         
     def _check_cart_mouse_position(self):
         """Check if mouse is still in cart area before unbinding"""
         try:
-            # Get mouse position relative to cart canvas
             x = self.cart_canvas.winfo_pointerx() - self.cart_canvas.winfo_rootx()
             y = self.cart_canvas.winfo_pointery() - self.cart_canvas.winfo_rooty()
             
-            # Check if mouse is still within canvas bounds
             if (0 <= x <= self.cart_canvas.winfo_width() and 
                 0 <= y <= self.cart_canvas.winfo_height()):
-                # Mouse still in cart area, keep scrolling active
                 return
             
-            # Mouse has left cart area, unbind scrolling
             self.root.unbind_all("<MouseWheel>")
             self.root.unbind_all("<Button-4>")
             self.root.unbind_all("<Button-5>")
             self.cart_scroll_active = False
         except tk.TclError:
-            # Widget might be destroyed, ignore
             pass
 
     # ===== UTILITY METHODS =====
@@ -744,9 +1101,8 @@ class CheckoutDialog:
         self.create_buttons(main_frame)
         
     def bind_checkout_mousewheel(self, canvas):
-        """Bind mousewheel events to checkout canvas with smooth scrolling"""
+        """Binds mousewheel events to checkout canvas"""
         def scroll_checkout(event):
-            # Cross-platform mousewheel support
             if event.num == 4:
                 canvas.yview_scroll(-1, "units")
             elif event.num == 5:
@@ -754,55 +1110,42 @@ class CheckoutDialog:
             else:
                 canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         
-        # Store scroll function
         self.checkout_scroll_function = scroll_checkout
         
         def bind_checkout_scroll(event=None):
-            # Bind for all platforms
-            self.dialog.bind_all("<MouseWheel>", scroll_checkout)  # Windows/Mac
-            self.dialog.bind_all("<Button-4>", scroll_checkout)    # Linux scroll up
-            self.dialog.bind_all("<Button-5>", scroll_checkout)    # Linux scroll down
+            self.dialog.bind_all("<MouseWheel>", scroll_checkout)
+            self.dialog.bind_all("<Button-4>", scroll_checkout)
+            self.dialog.bind_all("<Button-5>", scroll_checkout)
             self.checkout_scroll_active = True
         
         def unbind_checkout_scroll(event=None):
-            # Delayed unbinding to prevent conflicts
             self.dialog.after_idle(self._check_checkout_mouse_position)
         
-        # Bind when mouse enters the dialog
         self.dialog.bind('<Enter>', bind_checkout_scroll)
         self.dialog.bind('<Leave>', unbind_checkout_scroll)
-        
-        # Also bind to canvas
         canvas.bind('<Enter>', bind_checkout_scroll)
         canvas.bind('<Leave>', unbind_checkout_scroll)
-        
-        # Bind immediately when dialog opens
         bind_checkout_scroll()
         
     def _check_checkout_mouse_position(self):
         """Check if mouse is still in checkout dialog before unbinding"""
         try:
-            # Get mouse position relative to dialog
             x = self.dialog.winfo_pointerx() - self.dialog.winfo_rootx()
             y = self.dialog.winfo_pointery() - self.dialog.winfo_rooty()
             
-            # Check if mouse is still within dialog bounds
             if (0 <= x <= self.dialog.winfo_width() and 
                 0 <= y <= self.dialog.winfo_height()):
-                # Mouse still in dialog area, keep scrolling active
                 return
             
-            # Mouse has left dialog area, unbind scrolling
             self.dialog.unbind_all("<MouseWheel>")
             self.dialog.unbind_all("<Button-4>")
             self.dialog.unbind_all("<Button-5>")
             self.checkout_scroll_active = False
         except tk.TclError:
-            # Widget might be destroyed, ignore
             pass
         
     def create_order_summary(self, parent):
-        """Create order summary section"""
+        """Create order summary section with enhanced item details"""
         summary_frame = tk.Frame(parent, bg=self.colors['secondary'], relief='flat')
         summary_frame.pack(fill='x', pady=(0, 20), ipady=15, ipadx=15)
         
@@ -814,7 +1157,15 @@ class CheckoutDialog:
             item_frame = tk.Frame(summary_frame, bg=self.colors['secondary'])
             item_frame.pack(fill='x', pady=2)
             
+            # Enhanced item display with menu item details
             item_text = f"{item['quantity']}x {item['name']}"
+            if 'menu_item' in item:
+                menu_item = item['menu_item']
+                if menu_item.metadata.chef_special:
+                    item_text += " ⭐"
+                if menu_item.metadata.spice_level > 0:
+                    item_text += f" {'🌶️' * min(menu_item.metadata.spice_level, 3)}"
+            
             tk.Label(item_frame, text=item_text,
                     bg=self.colors['secondary'], fg=self.colors['fg'],
                     font=('Segoe UI', 10)).pack(side='left')
@@ -1122,5 +1473,6 @@ class PaymentSuccessDialog:
         tk.Label(main_frame, text="Thank you for your order!", 
                 bg=colors['bg'], fg=colors['fg'],
                 font=('Segoe UI', 12)).pack(pady=(10, 0))
+
 
 
